@@ -2,7 +2,7 @@ import Foundation
 
 // vtouch — touch(1) の拡張。作成日（birthtime）も書け、フォルダの中まで再帰できる。
 
-let version = "1.0"
+let version = "1.0.1"
 
 // MARK: - 言語
 

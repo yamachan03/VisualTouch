@@ -92,7 +92,11 @@ Other:
   -l       list dates only, change nothing
   -n       dry run — show what would change
   -v       print each file as it is changed
+  -h, --help, -help   this help
+  --version, -version version
 ```
+
+Help and messages are in English unless `LANG` / `LC_ALL` or the system language is Japanese.
 
 ```bash
 vtouch -r -t 202001010000 ~/Pictures/Trip         # whole folder tree → 2020-01-01 00:00

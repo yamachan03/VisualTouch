@@ -4,7 +4,50 @@ import Foundation
 
 let version = "1.0"
 
-let usage = """
+// MARK: - 言語
+
+/// LC_ALL / LANG が明示されていればそれに、無ければシステムの言語設定に従う。
+let isJapanese: Bool = {
+    let env = ProcessInfo.processInfo.environment
+    if let l = env["LC_ALL"] ?? env["LANG"], !l.isEmpty, l != "C", l != "POSIX" {
+        return l.hasPrefix("ja")
+    }
+    return Locale.preferredLanguages.first?.hasPrefix("ja") ?? false
+}()
+
+/// CLI にはバンドルが無いので、GUI と同じ日本語キーをここで英訳する。
+let english: [String: String] = [
+    "作成日を変更できませんでした": "couldn't change the creation date",
+    "変更日を変更できませんでした": "couldn't change the modification date",
+    "権限がありません": "permission denied",
+    "読み取り専用のボリュームです": "read-only volume",
+    "ファイルが見つかりません": "no such file",
+    "%@ には値が必要です": "%@ requires a value",
+    "-t の形式が不正です: %@（[[CC]YY]MMDDhhmm[.SS]）": "invalid -t stamp: %@ (expected [[CC]YY]MMDDhhmm[.SS])",
+    "-d の日時を解釈できません: %@": "can't parse -d date: %@",
+    "不明なオプション: %@": "unknown option: %@",
+    "-t / -d / --reference は 1 つだけ指定してください": "use only one of -t / -d / --reference",
+    "対象のファイルを指定してください": "no files given",
+    "--reference のファイルが見つかりません: %@": "--reference file not found: %@",
+    "作成できません — %@": "can't create — %@",
+    "(dry-run) 作成: %@": "(dry-run) create: %@",
+    "%@ を変更しますか?": "change %@?",
+    "%@ は存在しません。空のファイルを作りますか?": "%@ does not exist. Create an empty file?",
+    "作成日": "created",
+    "変更日": "modified",
+    "アクセス日": "accessed",
+    "作成日              変更日              アクセス日          パス": "Created              Modified             Accessed             Path",
+    "%@ 件": "%@ done",
+    " / %@ 件スキップ": " / %@ skipped",
+    " / %@ 件失敗": " / %@ failed",
+]
+
+func tr(_ key: String, _ args: CVarArg...) -> String {
+    let format = isJapanese ? key : (english[key] ?? key)
+    return args.isEmpty ? format : String(format: format, arguments: args)
+}
+
+let usageJa = """
 vtouch — touch の拡張。作成日（birthtime）も書け、フォルダの中まで再帰できます。
 
 使い方: vtouch [オプション] <ファイル/フォルダ>...
@@ -40,6 +83,44 @@ vtouch — touch の拡張。作成日（birthtime）も書け、フォルダの
   vtouch -rl ~/Documents                           # 日時を一覧表示するだけ
 """
 
+let usageEn = """
+vtouch — touch, extended. Sets the creation date (birthtime) too, and recurses into folders.
+
+Usage: vtouch [options] <file or folder>...
+
+Date (pick one; default is now):
+  -t STAMP            touch-compatible [[CC]YY]MMDDhhmm[.SS]   e.g. -t 202608310640.55
+  -d DATETIME         "2026/08/31 06:40:55", "2026-08-31T06:40", "2026-08-31" ...
+  --reference FILE    copy FILE's creation / modification / access dates
+
+Which dates (default: all three):
+  -b                  creation (birthtime)
+  -m                  modification
+  -a                  access
+
+Targets (rm-style):
+  -r, -R              recurse into folders
+  -H                  include hidden files when recursing
+  -f                  ignore missing paths and errors; exit 0 anyway
+  -i                  confirm each file
+  -c                  do not create missing files (by default, like touch, an empty file is created)
+
+Other:
+  -l                  list dates only, change nothing
+  -n                  dry run: show what would change
+  -v                  print each file as it is changed
+  -h, --help          this help
+  --version           version
+
+Examples:
+  vtouch -r -t 202001010000 ~/Pictures/Trip         # whole folder tree → 2020-01-01 00:00
+  vtouch -b -d "2026/08/31 06:40:55" Report.pages     # creation date only
+  vtouch -r --reference original.txt edited/          # copy original.txt's dates onto edited/ and everything inside
+  vtouch -rl ~/Documents                             # just list the dates
+"""
+
+let usage = isJapanese ? usageJa : usageEn
+
 struct Options {
     var date: Date?
     var reference: URL?
@@ -64,13 +145,19 @@ struct Options {
     }
 }
 
+/// stderr に書く前に stdout を流す。パイプ経由だと stdout がバッファされ、順序が入れ替わるため。
+func writeError(_ text: String) {
+    fflush(stdout)
+    FileHandle.standardError.write((text + "\n").data(using: .utf8)!)
+}
+
 func fail(_ message: String, code: Int32 = 2) -> Never {
-    FileHandle.standardError.write(("vtouch: " + message + "\n").data(using: .utf8)!)
+    writeError("vtouch: " + message)
     exit(code)
 }
 
 func warn(_ message: String) {
-    FileHandle.standardError.write(("vtouch: " + message + "\n").data(using: .utf8)!)
+    writeError("vtouch: " + message)
 }
 
 // MARK: - 引数解釈
@@ -83,14 +170,18 @@ func parseArguments(_ args: [String]) -> Options {
     func takeValue(after flag: String, inline: Substring?) -> String {
         if let inline, !inline.isEmpty { return String(inline) }
         i += 1
-        guard i < args.count else { fail("\(flag) には値が必要です") }
+        guard i < args.count else { fail(tr("%@ には値が必要です", flag)) }
         return args[i]
     }
 
     while i < args.count {
-        let a = args[i]
+        var a = args[i]
         if a == "--" {
             o.paths.append(contentsOf: args[(i + 1)...]); break
+        }
+        // -help / -version は束ねた短オプションではなく、長いオプションの別綴りとして扱う
+        if a == "-help" || a == "-version" {
+            a = "-" + a
         }
         if a.hasPrefix("--") {
             switch a {
@@ -107,7 +198,7 @@ func parseArguments(_ args: [String]) -> Options {
             case "--list": o.listOnly = true
             case "--dry-run": o.dryRun = true
             case "--verbose": o.verbose = true
-            default: fail("不明なオプション: \(a)\n\n" + usage)
+            default: fail(tr("不明なオプション: %@", a) + "\n\n" + usage)
             }
             i += 1
             continue
@@ -119,11 +210,11 @@ func parseArguments(_ args: [String]) -> Options {
                 switch ch {
                 case "t":
                     let v = takeValue(after: "-t", inline: chars)
-                    guard let d = DateText.parseTouchStamp(v) else { fail("-t の形式が不正です: \(v)（[[CC]YY]MMDDhhmm[.SS]）") }
+                    guard let d = DateText.parseTouchStamp(v) else { fail(tr("-t の形式が不正です: %@（[[CC]YY]MMDDhhmm[.SS]）", v)) }
                     o.date = d; dateSpecified += 1; chars = ""
                 case "d":
                     let v = takeValue(after: "-d", inline: chars)
-                    guard let d = DateText.parse(v) else { fail("-d の日時を解釈できません: \(v)") }
+                    guard let d = DateText.parse(v) else { fail(tr("-d の日時を解釈できません: %@", v)) }
                     o.date = d; dateSpecified += 1; chars = ""
                 case "b": o.creation = true
                 case "m": o.modification = true
@@ -137,7 +228,7 @@ func parseArguments(_ args: [String]) -> Options {
                 case "n": o.dryRun = true
                 case "v": o.verbose = true
                 case "h": print(usage); exit(0)
-                default: fail("不明なオプション: -\(ch)\n\n" + usage)
+                default: fail(tr("不明なオプション: %@", "-\(ch)") + "\n\n" + usage)
                 }
             }
             i += 1
@@ -147,8 +238,8 @@ func parseArguments(_ args: [String]) -> Options {
         i += 1
     }
 
-    if dateSpecified > 1 { fail("-t / -d / --reference は 1 つだけ指定してください") }
-    if o.paths.isEmpty { fail("対象のファイルを指定してください\n\n" + usage) }
+    if dateSpecified > 1 { fail(tr("-t / -d / --reference は 1 つだけ指定してください")) }
+    if o.paths.isEmpty { fail(tr("対象のファイルを指定してください") + "\n\n" + usage) }
     o.finalizeKinds()
     return o
 }
@@ -177,6 +268,7 @@ func expand(_ paths: [String], options: Options) -> [(url: URL, given: Bool)] {
 enum Outcome { case done, skipped, failed }
 
 func confirm(_ prompt: String) -> Bool {
+    fflush(stdout)
     FileHandle.standardError.write((prompt + " [y/N] ").data(using: .utf8)!)
     guard let line = readLine() else { return false }
     return ["y", "yes"].contains(line.trimmingCharacters(in: .whitespaces).lowercased())
@@ -201,20 +293,20 @@ func process(_ url: URL, given: Bool, options: Options,
         // ただし -c のとき、また表示だけの -l / -n のときは作らない。
         if options.noCreate { return .skipped }
         if options.listOnly {
-            if !options.force { warn("\(path): ファイルが見つかりません") }
+            if !options.force { warn("\(path): " + tr("ファイルが見つかりません")) }
             return .failed
         }
         guard given else { return .failed }
         if options.dryRun {
-            print("(dry-run) 作成: \(path)")
+            print(tr("(dry-run) 作成: %@", path))
             return .done
         }
-        if options.interactive, !confirm("\(path) は存在しません。空のファイルを作りますか?") {
+        if options.interactive, !confirm(tr("%@ は存在しません。空のファイルを作りますか?", path)) {
             return .skipped
         }
         do { try FileDateIO.createEmptyFile(at: url) }
         catch {
-            if !options.force { warn("\(path): 作成できません — \(FileDateIO.describe(error))") }
+            if !options.force { warn("\(path): " + tr("作成できません — %@", tr(FileDateIO.describe(error)))) }
             return .failed
         }
     }
@@ -228,14 +320,14 @@ func process(_ url: URL, given: Bool, options: Options,
     if options.dryRun {
         let d = FileDateIO.read(url)
         var parts: [String] = []
-        if let c = creation { parts.append("作成日 \(DateText.string(from: d.creation)) → \(DateText.string(from: c))") }
-        if let m = modification { parts.append("変更日 \(DateText.string(from: d.modification)) → \(DateText.string(from: m))") }
-        if let a = access { parts.append("アクセス日 \(DateText.string(from: d.access)) → \(DateText.string(from: a))") }
+        if let c = creation { parts.append(tr("作成日") + " \(DateText.string(from: d.creation)) → \(DateText.string(from: c))") }
+        if let m = modification { parts.append(tr("変更日") + " \(DateText.string(from: d.modification)) → \(DateText.string(from: m))") }
+        if let a = access { parts.append(tr("アクセス日") + " \(DateText.string(from: d.access)) → \(DateText.string(from: a))") }
         print("(dry-run) \(path)\n    " + parts.joined(separator: "\n    "))
         return .done
     }
 
-    if options.interactive, !confirm("\(path) を変更しますか?") {
+    if options.interactive, !confirm(tr("%@ を変更しますか?", path)) {
         return .skipped
     }
 
@@ -243,13 +335,13 @@ func process(_ url: URL, given: Bool, options: Options,
         try FileDateIO.write(creation: creation, modification: modification, access: access, to: url)
         let after = FileDateIO.read(url)
         if let problem = FileDateIO.verify(creation: creation, modification: modification, actual: after) {
-            if !options.force { warn("\(path): \(problem)") }
+            if !options.force { warn("\(path): " + tr(problem)) }
             return .failed
         }
         if options.verbose { print("✓ \(path)") }
         return .done
     } catch {
-        if !options.force { warn("\(path): \(FileDateIO.describe(error))") }
+        if !options.force { warn("\(path): " + tr(FileDateIO.describe(error))) }
         return .failed
     }
 }
@@ -263,7 +355,7 @@ var creationDate: Date?
 var modificationDate: Date?
 var accessDate: Date?
 if let ref = options.reference {
-    guard FileDateIO.exists(ref) else { fail("--reference のファイルが見つかりません: \(ref.path)") }
+    guard FileDateIO.exists(ref) else { fail(tr("--reference のファイルが見つかりません: %@", ref.path)) }
     let r = FileDateIO.read(ref)
     creationDate = options.creation ? r.creation : nil
     modificationDate = options.modification ? r.modification : nil
@@ -276,7 +368,7 @@ if let ref = options.reference {
 }
 
 if options.listOnly {
-    print("作成日              変更日              アクセス日          パス")
+    print(tr("作成日              変更日              アクセス日          パス"))
 }
 
 var done = 0, failed = 0, skipped = 0
@@ -290,10 +382,10 @@ for (url, given) in expand(options.paths, options: options) {
 }
 
 if options.verbose || options.dryRun {
-    var summary = "\(done) 件"
-    if skipped > 0 { summary += " / \(skipped) 件スキップ" }
-    if failed > 0 { summary += " / \(failed) 件失敗" }
-    FileHandle.standardError.write((summary + "\n").data(using: .utf8)!)
+    var summary = tr("%@ 件", String(done))
+    if skipped > 0 { summary += tr(" / %@ 件スキップ", String(skipped)) }
+    if failed > 0 { summary += tr(" / %@ 件失敗", String(failed)) }
+    writeError(summary)
 }
 
 exit(failed > 0 && !options.force ? 1 : 0)

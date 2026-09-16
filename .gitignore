@@ -1,0 +1,11 @@
+# ビルド生成物（release.sh / build.sh が作る）
+VisualTouch.app/
+*.zip
+
+# macOS
+.DS_Store
+
+# Xcode / Swift の一時物
+.build/
+DerivedData/
+*.xcuserstate

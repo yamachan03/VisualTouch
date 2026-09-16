@@ -23,6 +23,7 @@ swiftc -O -target "$TARGET" \
     Sources/Core/*.swift Sources/CLI/main.swift
 
 cp Info.plist "$APP/Contents/Info.plist"
+cp -R Resources/*.lproj "$APP/Contents/Resources/"
 codesign --force --sign - "$APP/Contents/MacOS/vtouch"
 codesign --force --sign - "$APP"
 

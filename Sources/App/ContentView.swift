@@ -92,8 +92,8 @@ struct ContentView: View {
             }
             .tableStyle(.inset(alternatesRowBackgrounds: true))
             .contextMenu(forSelectionType: FileEntry.ID.self) { ids in
-                Button("作成日をコピー") { copyDates(ids: ids, keyPath: \.creation, label: "作成日") }
-                Button("変更日をコピー") { copyDates(ids: ids, keyPath: \.modification, label: "変更日") }
+                Button("作成日をコピー") { copyDates(ids: ids, kind: .creation) }
+                Button("変更日をコピー") { copyDates(ids: ids, kind: .modification) }
                 Divider()
                 Button("Finder で表示") { revealInFinder(ids: ids) }
                 Button("一覧から外す") { store.remove(ids: ids); selection.subtract(ids) }
@@ -162,8 +162,8 @@ struct ContentView: View {
         .padding(.vertical, 10)
     }
 
-    private func dateField(_ title: String, _ date: Date?,
-                           highlight: Bool = false, help: String? = nil) -> some View {
+    private func dateField(_ title: LocalizedStringKey, _ date: Date?,
+                           highlight: Bool = false, help: LocalizedStringKey? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
                 .font(.caption)
@@ -216,9 +216,7 @@ struct ContentView: View {
 
                 Divider().frame(height: 16)
 
-                Button("作成日をコピー") {
-                    copyDates(ids: selection, keyPath: \.creation, label: "作成日")
-                }
+                Button("作成日をコピー") { copyDates(ids: selection, kind: .creation) }
                 .keyboardShortcut("c", modifiers: .command)
                 .disabled(selection.isEmpty)
 
@@ -226,7 +224,7 @@ struct ContentView: View {
                     .keyboardShortcut("v", modifiers: .command)
 
                 if let copied {
-                    Text("コピー中: " + DateText.string(from: copied))
+                    Text("コピー中: \(DateText.string(from: copied))")
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
@@ -281,26 +279,34 @@ struct ContentView: View {
         second = Calendar.current.component(.second, from: now)
     }
 
+    private enum DateKind { case creation, modification }
+
     /// 選択行の日時をクリップボードへ。複数選択なら「名前<TAB>日時」の行を並べる。
-    private func copyDates(ids: Set<FileEntry.ID>,
-                           keyPath: KeyPath<FileDates, Date?>,
-                           label: String) {
+    private func copyDates(ids: Set<FileEntry.ID>, kind: DateKind) {
+        let keyPath: KeyPath<FileDates, Date?> = kind == .creation ? \.creation : \.modification
         let picked = store.entries.filter { ids.contains($0.id) }
         let dates = picked.compactMap { $0.current[keyPath: keyPath] }
         guard !dates.isEmpty else {
-            store.message = "コピーできる\(label)がありません"
+            store.message = kind == .creation
+                ? String(localized: "コピーできる作成日がありません")
+                : String(localized: "コピーできる変更日がありません")
             return
         }
         if picked.count == 1, let d = dates.first {
-            DateClipboard.copy(DateText.string(from: d))
-            store.message = "\(label)をコピーしました: " + DateText.string(from: d)
+            let text = DateText.string(from: d)
+            DateClipboard.copy(text)
+            store.message = kind == .creation
+                ? String(localized: "作成日をコピーしました: \(text)")
+                : String(localized: "変更日をコピーしました: \(text)")
         } else {
             let lines = picked.compactMap { e -> String? in
                 guard let d = e.current[keyPath: keyPath] else { return nil }
                 return e.name + "\t" + DateText.string(from: d)
             }
             DateClipboard.copy(lines.joined(separator: "\n"))
-            store.message = "\(lines.count) 件の\(label)をコピーしました"
+            store.message = kind == .creation
+                ? String(localized: "\(lines.count) 件の作成日をコピーしました")
+                : String(localized: "\(lines.count) 件の変更日をコピーしました")
         }
         copied = dates.first
     }
@@ -308,13 +314,13 @@ struct ContentView: View {
     /// クリップボードの日時を「設定する日時」に流し込む。
     private func pasteDate() {
         guard let d = DateClipboard.paste() else {
-            store.message = "クリップボードから日時を読み取れませんでした"
+            store.message = String(localized: "クリップボードから日時を読み取れませんでした")
             return
         }
         targetDate = d
         second = Calendar.current.component(.second, from: d)
         copied = d
-        store.message = "日時をペーストしました: " + DateText.string(from: d)
+        store.message = String(localized: "日時をペーストしました: \(DateText.string(from: d))")
     }
 
     private func revealInFinder(ids: Set<FileEntry.ID>) {
@@ -328,8 +334,8 @@ struct ContentView: View {
         panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = true
-        panel.message = "日時を変更するファイル／フォルダを選択"
-        panel.prompt = "追加"
+        panel.message = String(localized: "日時を変更するファイル／フォルダを選択")
+        panel.prompt = String(localized: "追加")
         if panel.runModal() == .OK {
             store.add(urls: panel.urls, recurse: recurse)
         }

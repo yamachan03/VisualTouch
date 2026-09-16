@@ -23,22 +23,24 @@ enum CLIInstaller {
     @MainActor
     static func installWithPrompt() {
         guard FileManager.default.fileExists(atPath: source.path) else {
-            alert("vtouch が見つかりません",
-                  "アプリ内に vtouch が同梱されていません。build.sh で作り直してください。", style: .critical)
+            alert(String(localized: "vtouch が見つかりません"),
+                  String(localized: "アプリ内に vtouch が同梱されていません。build.sh で作り直してください。"),
+                  style: .critical)
             return
         }
         if isUpToDate {
-            alert("インストール済みです", "\(destination) は最新の vtouch です。\n\nターミナルで vtouch --help を実行すると使い方が出ます。")
+            alert(String(localized: "インストール済みです"),
+                  String(localized: "\(destination) は最新の vtouch です。\n\nターミナルで vtouch --help を実行すると使い方が出ます。"))
             return
         }
 
         let command = "mkdir -p /usr/local/bin && cp \(shellQuoted(source.path)) \(destination) && chmod 755 \(destination)"
         if let error = run(command) {
-            alert("インストールできませんでした", error, style: .critical)
+            alert(String(localized: "インストールできませんでした"), error, style: .critical)
             return
         }
-        alert("vtouch をインストールしました",
-              "\(destination) に置きました。\n\n例:\n  vtouch -r -t 202001010000 ~/Pictures/旅行\n  vtouch --help")
+        alert(String(localized: "vtouch をインストールしました"),
+              String(localized: "\(destination) に置きました。\n\n例:\n  vtouch -r -t 202001010000 ~/Pictures/旅行\n  vtouch --help"))
     }
 
     /// まず素で試し、書けなければ管理者権限で実行する。エラーメッセージを返す。
@@ -57,8 +59,8 @@ enum CLIInstaller {
         var error: NSDictionary?
         NSAppleScript(source: script)?.executeAndReturnError(&error)
         guard let error else { return nil }
-        if (error[NSAppleScript.errorNumber] as? Int) == -128 { return "キャンセルされました" }
-        return (error[NSAppleScript.errorMessage] as? String) ?? "不明なエラー"
+        if (error[NSAppleScript.errorNumber] as? Int) == -128 { return String(localized: "キャンセルされました") }
+        return (error[NSAppleScript.errorMessage] as? String) ?? String(localized: "不明なエラー")
     }
 
     private static func shellQuoted(_ s: String) -> String {

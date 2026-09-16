@@ -1,5 +1,7 @@
 # VisualTouch
 
+[English](README.en.md)
+
 ファイルの **作成日 / 変更日 / アクセス日** を書き換える macOS アプリ。`touch` の拡張です。
 `touch` では変更できない「作成日（birthtime）」を、複数ファイル・サブフォルダの中までまとめて適用できます。
 

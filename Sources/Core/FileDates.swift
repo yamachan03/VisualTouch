@@ -85,8 +85,8 @@ enum FileDateIO {
             guard let got else { return true }
             return abs(got.timeIntervalSince(want)) > 1
         }
-        if off(creation, actual.creation) { return "作成日を変更できませんでした" }
-        if off(modification, actual.modification) { return "変更日を変更できませんでした" }
+        if off(creation, actual.creation) { return String(localized: "作成日を変更できませんでした") }
+        if off(modification, actual.modification) { return String(localized: "変更日を変更できませんでした") }
         return nil
     }
 
@@ -115,17 +115,17 @@ enum FileDateIO {
         let ns = error as NSError
         if ns.domain == NSCocoaErrorDomain {
             switch ns.code {
-            case NSFileWriteNoPermissionError: return "権限がありません"
-            case NSFileWriteVolumeReadOnlyError: return "読み取り専用のボリュームです"
-            case NSFileNoSuchFileError: return "ファイルが見つかりません"
+            case NSFileWriteNoPermissionError: return String(localized: "権限がありません")
+            case NSFileWriteVolumeReadOnlyError: return String(localized: "読み取り専用のボリュームです")
+            case NSFileNoSuchFileError: return String(localized: "ファイルが見つかりません")
             default: break
             }
         }
         if let e = error as? POSIXError {
             switch e.code {
-            case .EPERM, .EACCES: return "権限がありません"
-            case .ENOENT: return "ファイルが見つかりません"
-            case .EROFS: return "読み取り専用のボリュームです"
+            case .EPERM, .EACCES: return String(localized: "権限がありません")
+            case .ENOENT: return String(localized: "ファイルが見つかりません")
+            case .EROFS: return String(localized: "読み取り専用のボリュームです")
             default: break
             }
         }

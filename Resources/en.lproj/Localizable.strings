@@ -1,0 +1,85 @@
+/* VisualTouch — English. Keys are the Japanese source strings. */
+
+/* Table */
+"名前" = "Name";
+"元の作成日" = "Original Created";
+"現在の作成日" = "Current Created";
+"変更日" = "Modified";
+"状態" = "Status";
+"✓ 変更済み" = "✓ Changed";
+
+/* Context menu */
+"作成日をコピー" = "Copy Creation Date";
+"変更日をコピー" = "Copy Modification Date";
+"Finder で表示" = "Show in Finder";
+"一覧から外す" = "Remove from List";
+
+/* Empty state */
+"ファイルやフォルダをここにドラッグ＆ドロップ" = "Drag & drop files or folders here";
+"複数まとめて追加できます（「追加…」ボタンからも可）" = "Add several at once, or use the Add… button";
+
+/* Inspector */
+"作成日（変更前）" = "Created (before)";
+"作成日（現在）" = "Created (now)";
+"アクセス日" = "Accessed";
+"追加日" = "Date Added";
+"Spotlight 作成日" = "Spotlight Created";
+"コンテンツ作成日" = "Content Created";
+"写真の撮影日など、ファイル内部のメタデータに記録された日時。ファイルシステムの作成日とは別物で、このアプリでは変更しません。" = "The date recorded inside the file's own metadata, such as a photo's capture date. It is separate from the file system creation date and this app does not change it.";
+"行を選ぶと、そのファイルが持つ日時の内訳を表示します" = "Select a row to see every date recorded for that file";
+"%lld 件を選択中" = "%lld selected";
+
+/* Controls */
+"追加…" = "Add…";
+"追加" = "Add";
+"すべてクリア" = "Clear All";
+"フォルダの中身も追加" = "Include folder contents";
+"設定する日時" = "Set to";
+"秒" = "sec";
+"現在時刻" = "Now";
+"ペースト" = "Paste";
+"コピー中: %@" = "Copied: %@";
+"変更する日時" = "Change";
+"作成日" = "Created";
+"適用先" = "Apply to";
+"すべて（%lld 件）" = "All (%lld)";
+"選択中のみ（%lld 件）" = "Selected only (%lld)";
+"元の日時に戻す" = "Restore Original Dates";
+"%lld 件に適用" = "Apply to %lld";
+"日時を変更するファイル／フォルダを選択" = "Choose the files or folders whose dates you want to change";
+
+/* Messages */
+"%lld 件を追加しました" = "Added %lld";
+"追加できる項目がありませんでした（重複の可能性）" = "Nothing to add (already in the list?)";
+"変更する項目にチェックを入れてください" = "Check at least one date to change";
+"元の日時が記録されていません" = "No original dates recorded";
+"対象のファイルがありません" = "No files to apply to";
+"%lld 件を変更しました" = "Changed %lld";
+"%lld 件成功 / %lld 件失敗" = "%lld succeeded / %lld failed";
+"コピーできる作成日がありません" = "No creation date to copy";
+"コピーできる変更日がありません" = "No modification date to copy";
+"作成日をコピーしました: %@" = "Copied creation date: %@";
+"変更日をコピーしました: %@" = "Copied modification date: %@";
+"%lld 件の作成日をコピーしました" = "Copied %lld creation dates";
+"%lld 件の変更日をコピーしました" = "Copied %lld modification dates";
+"クリップボードから日時を読み取れませんでした" = "Couldn't read a date from the clipboard";
+"日時をペーストしました: %@" = "Pasted: %@";
+
+/* Errors (shared with vtouch) */
+"作成日を変更できませんでした" = "Couldn't change the creation date";
+"変更日を変更できませんでした" = "Couldn't change the modification date";
+"権限がありません" = "Permission denied";
+"読み取り専用のボリュームです" = "Read-only volume";
+"ファイルが見つかりません" = "File not found";
+
+/* Menu / CLI installer */
+"コマンドラインツール「vtouch」をインストール…" = "Install Command Line Tool “vtouch”…";
+"vtouch が見つかりません" = "vtouch not found";
+"アプリ内に vtouch が同梱されていません。build.sh で作り直してください。" = "vtouch isn't bundled inside the app. Rebuild with build.sh.";
+"インストール済みです" = "Already installed";
+"%@ は最新の vtouch です。\n\nターミナルで vtouch --help を実行すると使い方が出ます。" = "%@ is already the latest vtouch.\n\nRun vtouch --help in Terminal for usage.";
+"インストールできませんでした" = "Couldn't install";
+"vtouch をインストールしました" = "vtouch installed";
+"%@ に置きました。\n\n例:\n  vtouch -r -t 202001010000 ~/Pictures/旅行\n  vtouch --help" = "Installed to %@.\n\nExamples:\n  vtouch -r -t 202001010000 ~/Pictures/Trip\n  vtouch --help";
+"キャンセルされました" = "Cancelled";
+"不明なエラー" = "Unknown error";

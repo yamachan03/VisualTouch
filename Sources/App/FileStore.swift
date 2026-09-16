@@ -19,7 +19,7 @@ struct FileEntry: Identifiable, Hashable {
         var label: String {
             switch self {
             case .none: return ""
-            case .success: return "✓ 変更済み"
+            case .success: return String(localized: "✓ 変更済み")
             case .failure(let m): return "⚠︎ " + m
             }
         }
@@ -56,7 +56,9 @@ final class FileStore: ObservableObject {
                 }
             }
         }
-        message = added > 0 ? "\(added) 件を追加しました" : "追加できる項目がありませんでした（重複の可能性）"
+        message = added > 0
+            ? String(localized: "\(added) 件を追加しました")
+            : String(localized: "追加できる項目がありませんでした（重複の可能性）")
     }
 
     @discardableResult
@@ -84,7 +86,7 @@ final class FileStore: ObservableObject {
     /// ids が空なら全件が対象。
     func apply(date: Date, ids: Set<FileEntry.ID>, creation: Bool, modification: Bool, access: Bool) {
         guard creation || modification || access else {
-            message = "変更する項目にチェックを入れてください"
+            message = String(localized: "変更する項目にチェックを入れてください")
             return
         }
         run(on: ids) { url in
@@ -99,7 +101,7 @@ final class FileStore: ObservableObject {
     func revert(ids: Set<FileEntry.ID>) {
         let originals = Dictionary(uniqueKeysWithValues: entries.map { ($0.url, $0.original) })
         run(on: ids) { url in
-            guard let o = originals[url] else { throw SimpleError("元の日時が記録されていません") }
+            guard let o = originals[url] else { throw SimpleError(String(localized: "元の日時が記録されていません")) }
             try FileDateIO.write(creation: o.creation, modification: o.modification,
                                  access: o.access, to: url)
             return (o.creation, o.modification)
@@ -111,7 +113,7 @@ final class FileStore: ObservableObject {
                      body: (URL) throws -> (creation: Date?, modification: Date?)) {
         let targets = ids.isEmpty ? Set(entries.map(\.id)) : ids
         guard !targets.isEmpty else {
-            message = "対象のファイルがありません"
+            message = String(localized: "対象のファイルがありません")
             return
         }
         var ok = 0, ng = 0
@@ -134,6 +136,8 @@ final class FileStore: ObservableObject {
                 ng += 1
             }
         }
-        message = ng == 0 ? "\(ok) 件を変更しました" : "\(ok) 件成功 / \(ng) 件失敗"
+        message = ng == 0
+            ? String(localized: "\(ok) 件を変更しました")
+            : String(localized: "\(ok) 件成功 / \(ng) 件失敗")
     }
 }

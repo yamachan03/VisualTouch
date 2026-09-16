@@ -7,7 +7,7 @@ enum ApplyScope: Hashable {
 }
 
 struct ContentView: View {
-    @StateObject private var store = FileStore()
+    @ObservedObject private var store = FileStore.shared
 
     @State private var targetDate = Date()
     @State private var second = Calendar.current.component(.second, from: Date())
@@ -131,17 +131,24 @@ struct ContentView: View {
     @ViewBuilder
     private var inspector: some View {
         let picked = store.entries.filter { selection.contains($0.id) }
-        HStack(alignment: .top, spacing: 20) {
+        Group {
             if let e = picked.first, picked.count == 1 {
                 let spot = FileDateIO.spotlightDates(e.url)
-                dateField("作成日（変更前）", e.original.creation)
-                dateField("作成日（現在）", e.current.creation, highlight: e.creationChanged)
-                dateField("変更日", e.current.modification)
-                dateField("アクセス日", e.current.access)
-                dateField("追加日", e.current.added)
-                dateField("Spotlight 作成日", spot.fsCreation)
-                dateField("コンテンツ作成日", spot.contentCreation,
-                          help: "写真の撮影日など、ファイル内部のメタデータに記録された日時。ファイルシステムの作成日とは別物で、このアプリでは変更しません。")
+                // 7 項目を 1 行に並べると幅が足りないので 2 段に分ける
+                Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 8) {
+                    GridRow {
+                        dateField("作成日（変更前）", e.original.creation)
+                        dateField("作成日（現在）", e.current.creation, highlight: e.creationChanged)
+                        dateField("変更日", e.current.modification)
+                        dateField("アクセス日", e.current.access)
+                    }
+                    GridRow {
+                        dateField("追加日", e.current.added)
+                        dateField("Spotlight 作成日", spot.fsCreation)
+                        dateField("コンテンツ作成日", spot.contentCreation,
+                                  help: "写真の撮影日など、ファイル内部のメタデータに記録された日時。ファイルシステムの作成日とは別物で、このアプリでは変更しません。")
+                    }
+                }
             } else {
                 Text(picked.isEmpty
                      ? "行を選ぶと、そのファイルが持つ日時の内訳を表示します"
@@ -149,11 +156,10 @@ struct ContentView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .frame(minHeight: 54, alignment: .topLeading)
     }
 
     private func dateField(_ title: String, _ date: Date?,
@@ -165,6 +171,8 @@ struct ContentView: View {
             Text(format(date))
                 .font(.system(.callout, design: .monospaced))
                 .foregroundStyle(highlight ? Color.accentColor : Color.primary)
+                .lineLimit(1)
+                .fixedSize()
         }
         .help(help ?? title)
     }

@@ -36,6 +36,9 @@ struct FileEntry: Identifiable, Hashable {
 
 @MainActor
 final class FileStore: ObservableObject {
+    /// ウインドウと AppDelegate（Finder / open コマンドからの受け取り）で同じ一覧を使う。
+    static let shared = FileStore()
+
     @Published var entries: [FileEntry] = []
     @Published var message: String = ""
 

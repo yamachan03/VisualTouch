@@ -188,6 +188,7 @@ let cwdPrefix = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     .resolvingSymlinksInPath().path + "/"
 func shown(_ url: URL) -> String {
     let p = url.resolvingSymlinksInPath().path
+    if p + "/" == cwdPrefix { return "." }
     return p.hasPrefix(cwdPrefix) ? String(p.dropFirst(cwdPrefix.count)) : url.path
 }
 
